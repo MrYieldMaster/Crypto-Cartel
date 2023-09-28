@@ -1,0 +1,16 @@
+{
+    "5369708225": {
+        "user_id": 5369708225,
+        "name": "APoc",
+        "cash": 231,
+        "health": 100,
+        "inventory": {
+            "cocaine": 7
+        },
+        "backpack_capacity": 100,
+        "city": "Houston",
+        "day": 4,
+        "loan": 0,
+        "loan_due_days": 0
+    }
+}
