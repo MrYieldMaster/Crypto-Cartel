@@ -2,15 +2,22 @@
     "5369708225": {
         "user_id": 5369708225,
         "name": "APoc",
-        "cash": 231,
-        "health": 100,
+        "cash": 3898,
+        "health": 80,
         "inventory": {
-            "cocaine": 7
+            "cocaine": 6
         },
         "backpack_capacity": 100,
         "city": "Houston",
-        "day": 4,
+        "day": 3,
         "loan": 0,
-        "loan_due_days": 0
+        "loan_due_days": 0,
+        "loan_reputation": 0,
+        "current_prices": {
+            "cocaine": 910,
+            "heroin": 1020,
+            "weed": 306
+        },
+        "last_checked_date": "2023-09-30"
     }
 }

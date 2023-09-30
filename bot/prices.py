@@ -24,6 +24,11 @@ def get_current_prices(city):
     - dict: Dictionary of fluctuated prices for each drug.
     """
     city_prices = base_prices.get(city)
+    
+    # If city is not found in base_prices
+    if city_prices is None:
+        print(f"Prices for city '{city}' not found!")
+        return {}
 
     fluctuated_prices = {}
     for drug, price in city_prices.items():

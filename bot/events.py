@@ -1,8 +1,10 @@
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 import random
+import datetime
 from dat_manager import get_user_data, update_user_data
-from items import DRUGS, get_drug_details
 from shop import HEALTH_PACKS, BACKPACKS
+from prices import get_current_prices, base_prices
+
 
 events = [
     {"effect": "bonus_drugs", "message": "You found a stash of drugs!"},
@@ -13,34 +15,69 @@ events = [
 
 
 def ask_drug_to_buy(update, context):
-    keyboard = [[InlineKeyboardButton(drug.capitalize(), callback_data=f'buy_{drug}')] for drug in DRUGS.keys()]
+    # Get user data from the data manager.
+    user_id = update.message.from_user.id
+    user_data = get_user_data(user_id)
+    city = user_data["city"]
 
+    # Check if user has checked prices today
+    last_checked_date = user_data.get("last_checked_date")
+
+    today = datetime.date.today()
+
+    # If user has not checked today or has never checked
+    if not last_checked_date or datetime.datetime.strptime(last_checked_date, '%Y-%m-%d').date() < today:
+        current_prices = get_current_prices(city)
+        user_data["current_prices"] = current_prices  # store the current prices in user data
+        user_data["last_checked_date"] = today.strftime('%Y-%m-%d')  # update the timestamp
+        update_user_data(user_id, user_data)  # store the updated data back
+
+    else:
+        # use the stored prices if user has already checked today
+        current_prices = user_data.get("current_prices", {})
+
+    # Rest of your function (fetching drug list and creating keyboard)
+    drug_list = list(base_prices[city].keys())
+    keyboard = [
+        [InlineKeyboardButton(f"{drug.capitalize()} (${current_prices[drug]})", callback_data=f'buy_{drug}')]
+        for drug in drug_list
+    ]
     reply_markup = InlineKeyboardMarkup(keyboard)
     update.message.reply_text('Select a drug to buy:', reply_markup=reply_markup)
+
 
 def handle_buy_callback(update, context):
     query = update.callback_query
     drug_name = query.data.split('_')[1]  # The format is 'buy_drugname'
-    drug_details = get_drug_details(drug_name)
 
-    if not drug_details:
+    # Identify user's city
+    user_id = query.from_user.id
+    user_data = get_user_data(user_id)
+    city = user_data["city"]
+
+    # Get current drug prices in the user's city
+    city_drug_prices = get_current_prices(city)
+    drug_price = city_drug_prices.get(drug_name)
+
+    # If the drug price is not found, answer with an error
+    if drug_price is None:
         query.answer(text="Unknown drug.")
         return
-    
-    # Handling health pack
+
+    # Handling health pack (assuming this is another feature you have)
     if query.data.startswith('buy_healthpack_'):
         health_pack_type = query.data.split('_')[2]
         query.edit_message_text(text=f"{health_pack_type.capitalize()} health packs restore {HEALTH_PACKS[health_pack_type]['health_restore']}% health and cost ${HEALTH_PACKS[health_pack_type]['price']}. To buy, use /buyhealthpack {health_pack_type} <amount>.")
         return
 
-    # Handling backpack
+    # Handling backpack (assuming this is another feature you have)
     if query.data.startswith('buy_backpack_'):
         backpack_type = query.data.split('_')[2]
         query.edit_message_text(text=f"{backpack_type.capitalize()} backpacks have a capacity of {BACKPACKS[backpack_type]['capacity']} and cost ${BACKPACKS[backpack_type]['price']}. To buy, use /buybackpack {backpack_type}.")
         return
 
-    # For now, we'll show the min and max price for simplicity
-    query.edit_message_text(text=f"The price of {drug_name.capitalize()} ranges from ${drug_details['min_price']} to ${drug_details['max_price']}. Enter the amount you wish to buy using /confirmbuy {drug_name} <amount>.")
+    # Display the drug price
+    query.edit_message_text(text=f"The current price of {drug_name.capitalize()} is ${drug_price}. Enter the amount you wish to buy using /confirmbuy {drug_name} <amount>.")
 
 def ask_drug_to_sell(update, context):
     user_id = update.message.from_user.id
@@ -50,30 +87,46 @@ def ask_drug_to_sell(update, context):
         update.message.reply_text("Error fetching your data. Try again later.")
         return
 
-    # List only drugs that the user has in inventory
-    drugs_to_list = [(drug, amount) for drug, amount in user_data["inventory"].items() if amount > 0]
-    keyboard = [[InlineKeyboardButton(f"💊 {drug.capitalize()} 📊({amount} units)", callback_data=f'sell_{drug}')] for drug, amount in drugs_to_list]
+    city = user_data["city"]
+    current_prices = get_current_prices(city)  # Fetch current prices for the city
+
+    # List only valid drugs that the user has in inventory
+    drugs_to_list = [(drug, amount) for drug, amount in user_data["inventory"].items() if amount > 0 and drug in current_prices]
+
+    # Update the keyboard buttons to include the current selling price for each drug
+    keyboard = [[InlineKeyboardButton(f"💊 {drug.capitalize()} 📊({amount} units) 💲({current_prices[drug]} each)", callback_data=f'sell_{drug}')] for drug, amount in drugs_to_list]
 
     if not keyboard:
         update.message.reply_text("You have no drugs to sell.")
         return
 
     reply_markup = InlineKeyboardMarkup(keyboard)
-    update.message.reply_text("💼 Here's your drug stash. Select a drug to sell:", reply_markup=reply_markup)
+    update.message.reply_text("💼 Here's your drug stash with current selling prices. Select a drug to sell:", reply_markup=reply_markup)
 
 
 
 def handle_sell_callback(update, context):
     query = update.callback_query
     drug_name = query.data.split('_')[1]  # The format is 'sell_drugname'
-    drug_details = get_drug_details(drug_name)
 
-    if not drug_details:
+    user_id = update.effective_user.id
+    user_data = get_user_data(user_id)
+
+    if not user_data:
+        query.answer(text="Error fetching your data. Try again later.")
+        return
+
+    city = user_data["city"]
+    current_prices = get_current_prices(city)
+
+    drug_price = current_prices.get(drug_name)
+
+    if drug_price is None:
         query.answer(text="Unknown drug.")
         return
 
-    # Just like buying, show the min and max price for simplicity
-    query.edit_message_text(text=f"You can sell {drug_name.capitalize()} for a price ranging from ${drug_details['min_price']} to ${drug_details['max_price']}. Enter the amount you wish to sell using /confirmsell {drug_name} <amount>.")
+    # Since we're only getting one price now, we'll display that single price
+    query.edit_message_text(text=f"You can sell {drug_name.capitalize()} for ${drug_price}. Enter the amount you wish to sell using /confirmsell {drug_name} <amount>.")
 
 def confirm_buy(update, context):
     user_input = context.args
@@ -82,20 +135,48 @@ def confirm_buy(update, context):
     if len(user_input) < 2:
         update.message.reply_text("Invalid format. Example usage: /confirmbuy drug <drug_name> <amount>.")
         return
+    
+    if user_input[0].lower() == "confirmbuy":
+        user_input = user_input[1:]
 
     item_type = user_input[0].lower()
+
+    
     user_id = update.message.from_user.id
     user_data = get_user_data(user_id)
 
     if item_type == "drug":
+        print("Processing drug purchase...")  # Debugging line
+        
         if len(user_input) != 3 or not user_input[2].isdigit():
             update.message.reply_text("Invalid format for drug. Usage: /confirmbuy drug <drug_name> <amount>.")
             return
 
         drug_name, amount = user_input[1], int(user_input[2])
-        drug_details = get_drug_details(drug_name)
+        city = user_data["city"]
+        city_drug_prices = get_current_prices(city)
         
-        if not drug_details:
+        print(f"Drug name: {drug_name}, Amount: {amount}, City: {city}, City drug prices: {city_drug_prices}")  # Debugging line
+        
+        
+        drug_name = drug_name.lower()
+        
+        allowed_drug_names = set()
+        for city_drugs in base_prices.values():  # Iterating over drug dictionaries for each city
+            for drug in city_drugs:
+                allowed_drug_names.add(drug)
+        
+        
+        if drug_name not in allowed_drug_names:
+            update.message.reply_text(f"Unknown drug name: {drug_name}. Please choose a valid drug.")
+            return
+
+
+        drug_price = city_drug_prices.get(drug_name)
+
+        
+        if not drug_price:
+            print(f"Drug {drug_name} not found in city {city}.")  # Debugging line
             update.message.reply_text("Unknown drug.")
             return
         
@@ -104,7 +185,8 @@ def confirm_buy(update, context):
             update.message.reply_text("You can't buy a negative or zero quantity.")
             return
 
-        price = random.randint(drug_details["min_price"], drug_details["max_price"])
+        price = drug_price
+
         total_price = price * amount
 
         # Validate that the user can afford the drugs and has space in their inventory
@@ -223,9 +305,16 @@ def confirm_sell(update, context):
         return
 
     drug_name, amount = user_input[0], int(user_input[1])
-    drug_details = get_drug_details(drug_name)
     
-    if not drug_details:
+    user_id = update.message.from_user.id
+    user_data = get_user_data(user_id)
+    city = user_data["city"]
+
+    # Fetch current fluctuated prices for the user's city
+    current_prices = get_current_prices(city)
+    
+    # Check if drug exists in current prices
+    if drug_name not in current_prices:
         update.message.reply_text("Unknown drug.")
         return
     
@@ -234,17 +323,8 @@ def confirm_sell(update, context):
         update.message.reply_text("You can't sell a negative or zero quantity.")
         return
 
-    # Check if drug exists in game data
-    drug_details = get_drug_details(drug_name)
-    if not drug_details:
-        update.message.reply_text("Unknown drug.")
-        return
-
-    price = random.randint(drug_details["min_price"], drug_details["max_price"])
+    price = current_prices[drug_name]
     total_price = price * amount
-
-    user_id = update.message.from_user.id
-    user_data = get_user_data(user_id)
 
     # Validate that the user has the drugs to sell
     if user_data["inventory"].get(drug_name, 0) < amount:
@@ -261,6 +341,3 @@ def confirm_sell(update, context):
     update.message.reply_text(f"Successfully sold {amount} {drug_name} for ${total_price}. You now have ${user_data['cash']}$.")
     event_message = random_event(user_id)
     update.message.reply_text(event_message)
-
-
-    

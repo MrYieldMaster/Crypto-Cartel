@@ -5,6 +5,7 @@ import json
 
 # Define a constant for maximum leaderboard entries (e.g., 10)
 MAX_LEADERBOARD_ENTRIES = 10
+RANK_EMOJIS = ["🥇", "🥈", "🥉", "🏅", "🏅", "🏅", "🏅", "🏅", "🏅", "🏅"]
 
 def load_users_data():
     with open("../data/users.json", "r") as f:
@@ -25,20 +26,19 @@ def format_leaderboard():
     leaderboard_text = "🏆 Crypto Cartel Leaderboard 🏆\n\n"
 
     for rank, (user_id, data) in enumerate(top_players, 1):
-        leaderboard_text += f"{rank}. User {user_id}: ${data['cash']}\n"
+        user_name = data['name'] # Retrieve the user's name
+        rank_emoji = RANK_EMOJIS[rank - 1] # Retrieve the appropriate emoji
+        leaderboard_text += f"{rank_emoji}. {user_name}: ${data['cash']}\n"
 
     return leaderboard_text
 
-def leaderboard_command(update: Update, context: CallbackContext) -> None:
-    all_users = users()
-    # Sort users by cash
-    sorted_users = sorted(all_users.values(), key=lambda x: x['cash'], reverse=True)
-    
-    leaderboard_text = "Leaderboard:\n"
-    for idx, user_data in enumerate(sorted_users, 1):
-        leaderboard_text += f"{idx}. {user_data['name']} - ${user_data['cash']}\n"
 
+
+def leaderboard_command(update: Update, context: CallbackContext) -> None:
+    leaderboard_text = format_leaderboard()
     update.message.reply_text(leaderboard_text)
+
+
     
 
 def store_score_to_leaderboard(user_id, score):
