@@ -4,6 +4,7 @@ from prices import get_current_prices
 from dat_manager import get_user_data, update_user_data
 
 
+
 # Assuming load_data() fetches user data from the database
 import logging
 
@@ -111,6 +112,8 @@ def process_drug_purchase(update: Update, context: CallbackContext, drug, amount
     if user_data["backpack_capacity"] < amount:
         update.message.reply_text("You don't have enough space in your backpack!")
         return
+    
+    
 
     # Deduct money and add drugs to inventory
     user_data["cash"] -= total_price
@@ -162,6 +165,8 @@ def buy_backpack(update, context):
 
     update.message.reply_text(f"Successfully bought a {pack_type} backpack for ${total_cost}. Your backpack capacity is now {user_data['backpack_capacity']}.")
 
+
+
 def display_healthpack_menu(update: Update, context: CallbackContext):
     keyboard = [
         [InlineKeyboardButton(f"{size.capitalize()} - {data['price']}$", callback_data=f'buy_healthpack_{size}') for size, data in HEALTH_PACKS.items()],
@@ -177,34 +182,35 @@ def display_healthpack_menu(update: Update, context: CallbackContext):
     else:
         update.message.reply_text("Choose a health pack:", reply_markup=reply_markup)
 
-def buy_health_pack(update, context):
+def buy_healthpack(update, context):
     user_input = context.args
     
     if len(user_input) != 2 or not user_input[1].isdigit():
         update.message.reply_text("Invalid format. Please use /buyhealthpack <small/medium/large> <amount>.")
         return
 
-    pack_type, amount = user_input[0], int(user_input[1])
+    callback_data = update.callback_query.data
+    size = callback_data.split('_')[-1]
 
-    if pack_type not in HEALTH_PACKS:
+    if size not in HEALTH_PACKS:
         update.message.reply_text("Unknown health pack type.")
         return
 
-    total_cost = amount * HEALTH_PACKS[pack_type]["price"]
+    total_cost = int(user_input[1]) * HEALTH_PACKS[size]["price"]
 
     user_id = update.message.from_user.id
     user_data = get_user_data(user_id)
 
     if user_data["cash"] < total_cost:
-        update.message.reply_text(f"You don't have enough money to buy {amount} {pack_type} health packs.")
+        update.message.reply_text(f"You don't have enough money to buy {user_input[1]} {size} health packs.")
         return
 
     user_data["cash"] -= total_cost
-    user_data["health"] = min(100, user_data["health"] + amount * HEALTH_PACKS[pack_type]["health_restore"])
+    user_data["health"] = min(100, user_data["health"] + int(user_input[1]) * HEALTH_PACKS[size]["health_restore"])
 
     update_user_data(user_id, user_data)
 
-    update.message.reply_text(f"Successfully bought {amount} {pack_type} health packs for ${total_cost}. Your health is now {user_data['health']}%.")
+    update.message.reply_text(f"Successfully bought {user_input[1]} {size} health packs for ${total_cost}. Your health is now {user_data['health']}%.")
 
 
 def handle_user_input(update: Update, context: CallbackContext):
@@ -227,7 +233,7 @@ def handle_user_input(update: Update, context: CallbackContext):
         pack_size = context.user_data.get('buying_healthpack')
         try:
             amount_to_buy = int(update.message.text)
-            buy_health_pack(update, context, pack_size, amount_to_buy)
+            buy_healthpack(update, context, pack_size, amount_to_buy)
         except ValueError:
             update.message.reply_text("Invalid input. Please enter a number.")
         finally:

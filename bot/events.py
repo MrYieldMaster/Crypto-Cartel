@@ -7,10 +7,13 @@ from prices import get_current_prices, base_prices
 
 
 events = [
-    {"effect": "bonus_drugs", "message": "You found a stash of drugs!"},
-    {"effect": "fine", "message": "You were raided by the police."},
-    {"effect": "health_decrease", "message": "A rival cartel attacked you."},
-    {"effect": "cash_bonus", "message": "An anonymous benefactor gave you cash."},
+    {"effect": "bonus_drugs", "message": "You found a stash of drugs hidden in an alley!"},
+    {"effect": "fine", "message": "You were stopped by the police and had to bribe them."},
+    {"effect": "health_decrease", "message": "A rival gang ambushed you on the street."},
+    {"effect": "cash_bonus", "message": "A grateful customer tipped you generously."},
+    {"effect": "drug_loss", "message": "Some of your stash got damaged in the rain."},
+    {"effect": "drug_quality", "message": "You found a new supplier with higher quality products."},
+    {"effect": "thief", "message": "A thief made away with some of your cash."},
 ]
 
 
@@ -36,7 +39,6 @@ def ask_drug_to_buy(update, context):
         # use the stored prices if user has already checked today
         current_prices = user_data.get("current_prices", {})
 
-    # Rest of your function (fetching drug list and creating keyboard)
     drug_list = list(base_prices[city].keys())
     keyboard = [
         [InlineKeyboardButton(f"{drug.capitalize()} (${current_prices[drug]})", callback_data=f'buy_{drug}')]
@@ -64,20 +66,20 @@ def handle_buy_callback(update, context):
         query.answer(text="Unknown drug.")
         return
 
-    # Handling health pack (assuming this is another feature you have)
+    # Handling health pack 
     if query.data.startswith('buy_healthpack_'):
         health_pack_type = query.data.split('_')[2]
         query.edit_message_text(text=f"{health_pack_type.capitalize()} health packs restore {HEALTH_PACKS[health_pack_type]['health_restore']}% health and cost ${HEALTH_PACKS[health_pack_type]['price']}. To buy, use /buyhealthpack {health_pack_type} <amount>.")
         return
 
-    # Handling backpack (assuming this is another feature you have)
+    # Handling backpack 
     if query.data.startswith('buy_backpack_'):
         backpack_type = query.data.split('_')[2]
         query.edit_message_text(text=f"{backpack_type.capitalize()} backpacks have a capacity of {BACKPACKS[backpack_type]['capacity']} and cost ${BACKPACKS[backpack_type]['price']}. To buy, use /buybackpack {backpack_type}.")
         return
 
     # Display the drug price
-    query.edit_message_text(text=f"The current price of {drug_name.capitalize()} is ${drug_price}. Enter the amount you wish to buy using /confirmbuy {drug_name} <amount>.")
+    query.edit_message_text(text=f"The current price of {drug_name.capitalize()} is ${drug_price}. Enter the amount you wish to buy using /confirmbuy drug {drug_name} <amount>.")
 
 def ask_drug_to_sell(update, context):
     user_id = update.message.from_user.id
@@ -262,34 +264,47 @@ def random_event(user_id):
     """Trigger a random event for the user."""
     user_data = get_user_data(user_id)
     selected_event = random.choice(events)
-    
+
     # Handle the effect of the event
     if selected_event["effect"] == "bonus_drugs":
-        available_drugs = [drug for drug, amount in user_data["inventory"].items() if amount > 0]
-        
-        # If there are no drugs, return a default message
-        if not available_drugs:
-            return "You found a stash, but it was empty."
-        
-        drug = random.choice(available_drugs)
-        quantity = random.randint(1, 10)  # Random quantity between 1 and 10
+        drug = random.choice(list(base_prices.keys()))  # This assumes base_prices holds all potential drugs
+        quantity = random.randint(1, 5)
         user_data["inventory"][drug] = user_data["inventory"].get(drug, 0) + quantity
         selected_event["message"] = f"You found a stash of {drug}! Added {quantity} units to your inventory."
 
     elif selected_event["effect"] == "fine":
-        fine_amount = random.randint(50, 200)  # Random fine between 50 and 200
-        user_data["cash"] -= fine_amount
-        selected_event["message"] = f"You were raided by the police and paid a fine of {fine_amount}$."
+        fine_amount = random.randint(50, 200)
+        user_data["cash"] = max(0, user_data["cash"] - fine_amount)  # Ensuring cash doesn't go negative
+        selected_event["message"] = f"You were stopped by the police and had to bribe them {fine_amount}$."
 
     elif selected_event["effect"] == "health_decrease":
-        health_loss = random.randint(5, 20)  # Lose between 5% to 20% of health
-        user_data["health"] -= health_loss
-        selected_event["message"] = f"A rival cartel attacked you. You lost {health_loss}% health."
+        health_loss = random.randint(5, 20)
+        user_data["health"] = max(0, user_data["health"] - health_loss)
+        selected_event["message"] = f"A rival gang ambushed you. You lost {health_loss}% health."
 
     elif selected_event["effect"] == "cash_bonus":
-        bonus_amount = random.randint(100, 500)  # Bonus between 100 and 500
+        bonus_amount = random.randint(100, 500)
         user_data["cash"] += bonus_amount
-        selected_event["message"] = f"An anonymous benefactor gave you {bonus_amount}$."
+        selected_event["message"] = f"A grateful customer tipped you {bonus_amount}$."
+
+    elif selected_event["effect"] == "drug_loss":
+        drug = random.choice(list(user_data["inventory"].keys()))
+        quantity = random.randint(1, 5)
+        user_data["inventory"][drug] = max(0, user_data["inventory"][drug] - quantity)
+        selected_event["message"] = f"Some of your {drug} stash got damaged in the rain. You lost {quantity} units."
+
+    elif selected_event["effect"] == "drug_quality":
+        quality_increase = random.randint(5, 15)
+        selected_event["message"] = f"You found a new supplier. All drugs' values increased by {quality_increase}% for today!"
+
+        # Increase the value of all drugs
+        for drug in user_data["inventory"].keys():
+            user_data["inventory"][drug] *= (1 + (quality_increase / 100))
+
+    elif selected_event["effect"] == "thief":
+        loss_amount = random.randint(50, 150)
+        user_data["cash"] = max(0, user_data["cash"] - loss_amount)
+        selected_event["message"] = f"A thief stole {loss_amount}$ from you."
 
     # Remember to update the user data after making changes
     update_user_data(user_id, user_data)

@@ -16,7 +16,13 @@ USER_TEMPLATE = {
     "day" : 1,
     "loan": 0,  # Amount the user owes
     "loan_due_days": 0,  # Days remaining to repay the loan (0 means no loan taken)
-    "loan_reputation": 0
+    "loan_reputation": 0,
+    "gambling_wins": 0,
+    "gambling_losses": 0,
+    "total_gambled": 0,
+    "gambling_streak": 0,
+    "max_gambling_streak": 0,  # Maximum gambling winning streak
+    "daily_betting_limit": 500  # Daily betting limit (adjust as needed)
 }
 
 def initialize_user(user_id, user_name):

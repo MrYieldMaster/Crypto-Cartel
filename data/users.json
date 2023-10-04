@@ -2,22 +2,55 @@
     "5369708225": {
         "user_id": 5369708225,
         "name": "APoc",
-        "cash": 3898,
-        "health": 80,
+        "cash": 736,
+        "health": 100,
         "inventory": {
-            "cocaine": 6
+            "cocaine": 0.10900000000000011
         },
         "backpack_capacity": 100,
-        "city": "Houston",
-        "day": 3,
+        "city": "Chicago",
+        "day": 5,
         "loan": 0,
         "loan_due_days": 0,
         "loan_reputation": 0,
+        "gambling_wins": 2,
+        "gambling_losses": 4,
+        "total_gambled": 0,
+        "gambling_streak": 1,
+        "max_gambling_streak": 1,
+        "daily_betting_limit": 100,
         "current_prices": {
-            "cocaine": 910,
-            "heroin": 1020,
-            "weed": 306
+            "cocaine": 1134,
+            "heroin": 1150,
+            "weed": 277
         },
-        "last_checked_date": "2023-09-30"
+        "last_checked_date": "2023-10-03"
+    },
+    "1768117287": {
+        "user_id": 1768117287,
+        "name": "NV-LTE",
+        "cash": 1060,
+        "health": 89,
+        "inventory": {
+            "Houston": 2
+        },
+        "backpack_capacity": 100,
+        "city": "Los Angeles",
+        "day": 1,
+        "loan": 0,
+        "loan_due_days": 0,
+        "loan_reputation": 0,
+        "gambling_wins": 0,
+        "gambling_losses": 0,
+        "total_gambled": 0,
+        "gambling_streak": 0,
+        "max_gambling_streak": 0,
+        "daily_betting_limit": 500,
+        "current_prices": {
+            "cocaine": 990,
+            "heroin": 1332,
+            "weed": 327
+        },
+        "last_checked_date": "2023-10-02"
     }
 }

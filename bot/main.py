@@ -1,10 +1,11 @@
 from telegram import Update
 from telegram.ext import Updater, CommandHandler, CallbackContext, CallbackQueryHandler, MessageHandler, filters
 from telegram import error as tg_error
-from shop import display_shop, handle_shop_callback, buy_backpack, buy_health_pack
+from shop import display_shop, handle_shop_callback, buy_backpack, buy_healthpack, display_healthpack_menu, display_backpack_menu
 from dat_manager import get_user_data, initialize_user
 from travel import list_cities, travel_callback, restart_game
 from prices import get_current_prices
+from gambling import start_gamble, gamble_callback
 from telegram import ReplyKeyboardMarkup
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from loan import take_loan_command, repay_loan_command, check_due_loans
@@ -12,14 +13,13 @@ import logging
 from dotenv import load_dotenv
 import os
 import asyncio
+from events import ask_drug_to_buy, handle_buy_callback, ask_drug_to_sell, handle_sell_callback, random_event, confirm_buy, confirm_sell
+from daily import daily_bonus
+from leaderboard import leaderboard_command
 
 
 load_dotenv() 
 
-# Importing the necessary functionalities from other modules
-from events import ask_drug_to_buy, handle_buy_callback, ask_drug_to_sell, handle_sell_callback, random_event, confirm_buy, confirm_sell
-from daily import daily_bonus
-from leaderboard import leaderboard_command
 
 # Use an environment variable to store your TOKEN securely
 TOKEN = os.environ.get('TELEGRAM_TOKEN')
@@ -50,19 +50,27 @@ def start(update: Update, context: CallbackContext) -> None:
     Type /start or /help to get started.
     """
     
-    custom_keyboard = [['/status', '/leaderboard', '/loan'], 
-                   ['/buy', '/sell', '/shop'],
-                   ['/take_loan', '/repay_loan', '/buyhealthpack'],
-                   ['/backpacks', '/daily','/travel']]
+    image_url = "https://pbs.twimg.com/media/F7jTLcqaMAA6A3u?format=jpg&name=small"
+    
+    custom_keyboard = [['/status 📊', '/leaderboard 🏆', '/loan 💼'], 
+                   ['/buy 🛍️', '/sell 💰', '/shop 🏬'],
+                   ['/take_loan 💵', '/repay_loan 💳', '/buyhealthpack 💉'],
+                   ['/backpacks 🎒', '/daily 📆', '/travel 🌍'],
+                   ['/gamble 🎲']]  
     reply_markup = ReplyKeyboardMarkup(custom_keyboard)
+    
+    update.message.bot.send_photo(chat_id=user_id, photo=image_url)
+    
     update.message.reply_text(welcome_message, reply_markup=reply_markup)
-
+    
+    
+    
     
     if not get_user_data(user_id):
         initialize_user(user_id, user_name)
-        update.message.reply_text("Welcome! Your profile has been created.")
+        update.message.reply_text("Welcome! You are now the 🔌 , Your profile has been created.")
     else:
-        update.message.reply_text("Welcome back!")
+        update.message.reply_text("Welcome back Lord!")
 
     
 def display_options(update: Update, context: CallbackContext) -> None:
@@ -71,7 +79,8 @@ def display_options(update: Update, context: CallbackContext) -> None:
          InlineKeyboardButton("Sell", callback_data='sell')],
         [InlineKeyboardButton("Shop", callback_data='shop'), 
          InlineKeyboardButton("Travel", callback_data='travel')],
-        [InlineKeyboardButton("Loan", callback_data='loan')]
+        [InlineKeyboardButton("Loan", callback_data='loan')],
+        [InlineKeyboardButton("Gamble", callback_data='gamble')]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
     print(reply_markup)
@@ -85,6 +94,7 @@ def help_command(update, context):
 /help - ❓ Displays this help message.
 /buy - 🛍️ Start the buying process for drugs.
 /sell - 💼 Start the selling process for drugs.
+/gamble - 🎲 Test your luck and gamble your cash.
 /status - ℹ️ Check your current status, cash, inventory, and more.
 /leaderboard - 🏆 See the top drug dealers in the game.
 /daily - 📆 Claim your daily reward.
@@ -152,9 +162,8 @@ def status(update: Update, context: CallbackContext):
         inventory_status = "🚫 Empty"
         
     current_day = user_data['day']
-    
     loan_status = f"💸 <b>🏦 Loan Outstanding</b>: <i>${user_data['loan']}</i>\n" if user_data['loan'] > 0 else ""
-
+    prices_status = "\n".join([f"{drug}: ${price}" for drug, price in get_current_prices(user_data['city']).items()])
 
     message = (
         f"<b>🌆 Current City</b>: <i>{user_data['city']}</i>\n"
@@ -166,6 +175,7 @@ def status(update: Update, context: CallbackContext):
         f"{prices_status}\n"
         f"\n<b>🎒 Inventory</b>:\n"
         f"{inventory_status}\n"
+        
         
     )
     update.message.reply_text(message, parse_mode="HTML")
@@ -206,15 +216,17 @@ def main() -> None:
     dp.add_handler(CommandHandler('daily', daily_command))
     dp.add_handler(CommandHandler('confirmbuy', confirm_buy))
     dp.add_handler(CommandHandler('confirmsell', confirm_sell))
-    dp.add_handler(CommandHandler('buyhealthpack', buy_health_pack, pass_args=True))
-    dp.add_handler(CommandHandler('backpacks', buy_backpack, pass_args=True))
+    dp.add_handler(CommandHandler('buyhealthpack', display_healthpack_menu))
+    dp.add_handler(CommandHandler('backpacks', display_backpack_menu ))
     dp.add_handler(CommandHandler('shop', display_shop))
     dp.add_handler(CommandHandler('travel', list_cities))
     dp.add_handler(CommandHandler('options', display_options))
     dp.add_handler(CommandHandler('restart', restart_game))
     dp.add_handler(CommandHandler('take_loan', take_loan_command, pass_args=True))
-    dp.add_handler(CommandHandler('repay_loan', repay_loan_command, pass_args=True))
+    dp.add_handler(CommandHandler('repay_loan', repay_loan_command))
     dp.add_handler(CommandHandler('loan', loan_info))
+    dp.add_handler(CommandHandler('gamble', start_gamble))
+   
 
 
 
@@ -226,6 +238,11 @@ def main() -> None:
     dp.add_handler(CallbackQueryHandler(handle_sell_callback, pattern='^sell_'))
     dp.add_handler(CallbackQueryHandler(handle_shop_callback, pattern='^shop_'))
     dp.add_handler(CallbackQueryHandler(travel_callback, pattern='^travel_'))
+    dp.add_handler(CallbackQueryHandler(gamble_callback, pattern='^gamble_'))
+    dp.add_handler(CallbackQueryHandler(buy_backpack, pattern='^buy_backpacks_(small|medium|large)$'))
+    dp.add_handler(CallbackQueryHandler(buy_healthpack, pattern='^buy_healthpack_'))
+
+    
 
 
     loop = asyncio.get_event_loop()
