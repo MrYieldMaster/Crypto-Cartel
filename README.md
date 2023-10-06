@@ -1,7 +1,8 @@
 Crypto Cartel - Telegram Game Bot 🕹️
 Crypto Cartel Banner
 
-A thrilling, Telegram-based strategy game where you immerse yourself in the world of cryptocurrency trading, inspired by classic drug-dealing games. Navigate through market crashes, dodge the law, and climb to the top of the cartel!
+
+A thrilling, Telegram-based strategy game where you immerse yourself in the world of trading drugs, Selling high and buying low! working your way to the top! 30 days to set your highscore, inspired by classic drug-dealing games. Navigate through market crashes, dodge the law, and climb to the top of the cartel!Top player with the most cash wins
 
 Table of Contents
 Features
@@ -14,7 +15,7 @@ License
 Acknowledgments
 Features
 Dynamic Market: Witness the volatile world of cryptocurrency, with prices that change daily.
-Inventory Management: Buy low, sell high, and expand your inventory with items from the shop.
+Inventory Management: Buy low, sell high, and expand your inventory with items from the Market.
 Daily Bonuses: Daily engagement rewards to keep you ahead.
 Leaderboard: Compete with players globally and climb the leaderboards.
 Random Events: Market crashes, police raids, and more – stay prepared for anything.

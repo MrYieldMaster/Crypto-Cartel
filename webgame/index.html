@@ -1,0 +1,74 @@
+<!DOCTYPE html> 
+<html> lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Crypto Cartel </title>
+        <link rel="stylesheet" href="styles.css">
+    </head>
+    <body>
+        <!-- Player Stats Section -->
+        <div id="playerStats">
+            <span id="playerName">Player Name</span>
+            <span id="playerMoney">Money: $XXXX</span>
+            <span id="playerBank">Bank: $XXXX</span>
+            <span id="playerDebt">Debt: $XXXX</span>
+            <span id="playerHealth">Health: XX%</span>
+            <span id="gameDay">Day: X/30</span>
+            <span id="playerScore">Score: XXXX</span>
+            <span id="playerCity">City: XXXX</span>
+
+            <!-- In your player stats or a suitable section -->
+            <button id="shareScoreBtn">Share My Score</button>
+            <button id="viewLeaderboardBtn">View Leaderboard</button>
+   
+        </div>
+    
+        <!-- Marketplace Section -->
+        <div id="marketplace">
+            <h2>Marketplace</h2>
+            <!-- List of drugs and their prices for buying/selling -->
+            <div id="drugList">
+                <!-- Example: <div class="drug">Cocaine: $XXXX <button>Buy</button> <button>Sell</button></div> -->
+            </div>
+            <button id="travelBtn">Travel to Another City</button>
+        </div>
+    
+        <!-- Inventory Section -->
+        <div id="inventory">
+            <h2>Inventory</h2>
+            <!-- List of drugs player owns -->
+            <div id="ownedDrugs">
+                <!-- Example: <div class="drug">Cocaine: XX units</div> -->
+            </div>
+        </div>
+
+        <!-- Rival Drug Lords -->
+        <div id="rivals">
+             <h2>Rival Drug Lords</h2>
+            <button onclick="encounterRival()">Encounter a Rival</button>
+        </div>
+
+        <!-- Special Missions -->
+        <div id="missions">
+             <h2>Special Missions</h2>
+            <button onclick="offerMission()">Get a Mission</button>
+        </div>
+
+        <!-- Feedback Area -->
+        <div id="feedback">
+             <!-- Feedback messages will be displayed here -->
+        </div>
+    
+        <!-- Navigation Section -->
+        <div id="navigation">
+            <button id="travelBtn">Travel</button>
+            <button id="bankBtn">Bank</button>
+            <button id="gambleBtn">Gamble</button>
+            <button id="leaderboardBtn">Leaderboard</button>
+        </div>
+    
+        <script src="game.js"></script>
+    </body>
+
+</html>

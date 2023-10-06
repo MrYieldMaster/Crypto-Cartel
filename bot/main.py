@@ -45,7 +45,7 @@ def start(update: Update, context: CallbackContext) -> None:
     
     welcome_message = """
     Welcome to Crypto Cartel! 🌍
-    Dive deep into the world of cryptos and cartels. Rule the streets, 
+    Dive deep into the world of crypto and Drug Lords. Rule the streets, 
     trade in the shadows, and rise to the top. But always remember: trust no one.
     Type /start or /help to get started.
     """
